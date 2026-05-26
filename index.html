@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TES Monitor · República de Colombia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root {
+  --cream: #faf7f2;
+  --cream2: #f3ede3;
+  --cream3: #ede4d6;
+  --ivory: #fff9f2;
+  --ink: #1a1510;
+  --ink2: #3d3426;
+  --ink3: #7a6e5f;
+  --ink4: #b0a492;
+  --emerald: #0d6b4f;
+  --emerald2: #0a5540;
+  --emerald-light: #e8f4ef;
+  --emerald-pale: #f0f9f5;
+  --terracotta: #c4502a;
+  --terra-light: #faeee9;
+  --gold: #b8860b;
+  --gold-light: #fdf6e3;
+  --border: rgba(26,21,16,0.10);
+  --border2: rgba(26,21,16,0.18);
+  --shadow: 0 2px 24px rgba(26,21,16,0.07);
+  --shadow2: 0 8px 40px rgba(26,21,16,0.12);
+  --serif: 'Playfair Display', Georgia, serif;
+  --sans: 'DM Sans', system-ui, sans-serif;
+  --mono: 'DM Mono', monospace;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { background: var(--cream); color: var(--ink); font-family: var(--sans); min-height: 100vh; }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: var(--cream2); }
+::-webkit-scrollbar-thumb { background: var(--ink4); border-radius: 3px; }
+
+/* MASTHEAD */
+.masthead {
+  background: var(--ivory);
+  border-bottom: 2px solid var(--ink);
+  padding: 0 2rem;
+}
+.masthead-top {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 1rem 0 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; flex-direction: column; gap: 2px; }
+.brand-title {
+  font-family: var(--serif); font-size: 28px; font-weight: 700;
+  letter-spacing: -0.01em; color: var(--ink); line-height: 1;
+}
+.brand-title span { color: var(--emerald); }
+.brand-sub { font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink3); font-weight: 400; }
+.masthead-center { text-align: center; }
+.republic-seal {
+  width: 52px; height: 52px; border: 1.5px solid var(--border2);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-family: var(--serif); font-size: 18px; color: var(--emerald); font-weight: 700;
+}
+.masthead-right { text-align: right; }
+.clock-display { font-family: var(--mono); font-size: 13px; color: var(--ink2); font-weight: 400; }
+.date-display { font-size: 11px; color: var(--ink3); letter-spacing: 0.06em; margin-top: 2px; }
+
+/* TICKER ANIMADO */
+.ticker-outer {
+  overflow: hidden; height: 36px; display: flex; align-items: center;
+  border-top: 1px solid var(--border);
+}
+.ticker-track {
+  display: flex; align-items: center; gap: 0;
+  animation: tickerScroll 55s linear infinite;
+  white-space: nowrap; will-change: transform;
+}
+.ticker-track:hover { animation-play-state: paused; }
+@keyframes tickerScroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.tick { display: inline-flex; gap: 8px; align-items: baseline; padding: 0 2rem; border-right: 1px solid var(--border); }
+.tick-key { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); }
+.tick-val { font-family: var(--mono); font-size: 13px; font-weight: 400; color: var(--ink); }
+.tick-chg { font-family: var(--mono); font-size: 11px; }
+.tick-chg.up { color: var(--terracotta); }
+.tick-chg.dn { color: var(--emerald); }
+.tick-source { font-size: 9px; color: var(--ink4); margin-left: 2px; }
+.tick-live { font-size: 9px; letter-spacing: 0.08em; color: var(--emerald); font-weight: 500; }
+/* Data status bar */
+.data-bar {
+  background: var(--emerald-pale); border-bottom: 1px solid rgba(13,107,79,0.15);
+  padding: 3px 2rem; display: flex; gap: 1.5rem; align-items: center;
+  font-size: 10px; color: var(--ink3); letter-spacing: 0.04em;
+}
+.data-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+.data-dot.live { background: var(--emerald); animation: pip 1.8s infinite; }
+.data-dot.static { background: var(--ink4); }
+.data-item { display: flex; align-items: center; gap: 3px; }
+
+/* NAV BAR */
+.nav-bar {
+  background: var(--ink);
+  display: flex; gap: 0; padding: 0 2rem;
+  position: sticky; top: 0; z-index: 100;
+}
+.nav-item {
+  font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+  color: rgba(255,255,255,0.45); padding: 11px 18px;
+  cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.2s; font-weight: 400; white-space: nowrap;
+}
+.nav-item:hover { color: rgba(255,255,255,0.8); }
+.nav-item.active { color: #fff; border-bottom-color: var(--emerald); }
+.nav-right { margin-left: auto; display: flex; align-items: center; }
+.live-pip { display: flex; align-items: center; gap: 6px; font-size: 10px; letter-spacing: 0.1em; color: var(--emerald); }
+.pip { width: 6px; height: 6px; border-radius: 50%; background: var(--emerald); animation: pip 1.8s infinite; }
+@keyframes pip { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.7)} }
+
+/* MAIN CONTENT */
+.main { max-width: 1280px; margin: 0 auto; padding: 2rem; }
+
+/* PANELS */
+.panel { display: none; animation: fadeIn 0.3s ease; }
+.panel.active { display: block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+/* PAGE TITLE */
+.page-title {
+  font-family: var(--serif); font-size: 32px; font-weight: 600;
+  color: var(--ink); margin-bottom: 0.25rem; line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+.page-title em { color: var(--emerald); font-style: italic; }
+.page-sub { font-size: 13px; color: var(--ink3); margin-bottom: 2rem; letter-spacing: 0.02em; }
+
+/* RULE */
+.ruled { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+.ruled-heavy { border: none; border-top: 2px solid var(--ink); margin: 1.5rem 0; }
+
+/* KPI STRIP */
+.kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px,1fr)); gap: 0; border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; margin-bottom: 2rem; background: var(--border); }
+.kpi {
+  background: var(--ivory); padding: 1.1rem 1.25rem;
+  position: relative; overflow: hidden;
+  animation: kpiIn 0.4s ease both;
+}
+.kpi::after { content:''; position:absolute; top:0;left:0;right:0; height:3px; background:var(--emerald); opacity:0; transition:opacity 0.2s; }
+.kpi:hover::after { opacity:1; }
+@keyframes kpiIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.kpi:nth-child(1){animation-delay:0.05s} .kpi:nth-child(2){animation-delay:0.10s}
+.kpi:nth-child(3){animation-delay:0.15s} .kpi:nth-child(4){animation-delay:0.20s}
+.kpi:nth-child(5){animation-delay:0.25s} .kpi:nth-child(6){animation-delay:0.30s}
+.kpi-label { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); margin-bottom: 8px; }
+.kpi-val { font-family: var(--serif); font-size: 26px; font-weight: 600; color: var(--ink); line-height: 1; }
+.kpi-chg { font-family: var(--mono); font-size: 11px; margin-top: 5px; }
+.kpi-chg.up { color: var(--terracotta); }
+.kpi-chg.dn { color: var(--emerald); }
+.kpi-chg.flat { color: var(--ink4); }
+
+/* TWO COL */
+.col2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+.col3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.25rem; margin-bottom: 1.5rem; }
+.col65 { display: grid; grid-template-columns: 1.65fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+@media(max-width:768px){ .col2,.col3,.col65{grid-template-columns:1fr;} }
+
+/* BOX */
+.box {
+  background: var(--ivory); border: 1px solid var(--border2);
+  border-radius: 6px; padding: 1.25rem 1.5rem;
+  box-shadow: var(--shadow);
+}
+.box-label { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+.box-label::after { content:''; flex:1; height:1px; background:var(--border); }
+
+/* CHART WRAP */
+.chart-wrap { position: relative; width: 100%; }
+
+/* DATA TABLE */
+.dt { width: 100%; border-collapse: collapse; font-size: 13px; }
+.dt thead th { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink3); padding: 6px 10px; border-bottom: 1px solid var(--border2); text-align: left; font-weight: 500; background: var(--cream2); }
+.dt tbody td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--ink2); }
+.dt tbody tr:last-child td { border-bottom: none; }
+.dt tbody tr:hover td { background: var(--emerald-pale); }
+.dt tfoot td { padding: 8px 10px; font-weight: 500; border-top: 1px solid var(--border2); color: var(--ink); font-size: 12px; }
+
+/* RESULT ROWS */
+.res-list { list-style: none; }
+.res-item { display: flex; justify-content: space-between; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.res-item:last-child { border-bottom: none; }
+.res-key { font-size: 12px; color: var(--ink3); letter-spacing: 0.03em; }
+.res-val { font-family: var(--mono); font-size: 14px; color: var(--ink); font-weight: 400; }
+.res-val.accent { color: var(--emerald); font-weight: 500; }
+.res-val.warn { color: var(--terracotta); }
+
+/* FORM */
+.form-label { font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink3); display: block; margin-bottom: 5px; }
+.form-input, .form-select {
+  width: 100%; background: var(--cream);
+  border: 1px solid var(--border2); border-radius: 4px;
+  color: var(--ink); font-family: var(--mono); font-size: 13px;
+  padding: 8px 12px; outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.form-input:focus, .form-select:focus { border-color: var(--emerald); box-shadow: 0 0 0 3px rgba(13,107,79,0.08); }
+.form-select option { background: var(--cream); }
+.form-group { margin-bottom: 1rem; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+/* BUTTON */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--ink); color: var(--cream); border: none;
+  font-family: var(--sans); font-size: 12px; font-weight: 500;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  padding: 10px 24px; border-radius: 4px; cursor: pointer;
+  transition: all 0.2s;
+}
+.btn:hover { background: var(--emerald2); }
+.btn-outline {
+  background: transparent; border: 1.5px solid var(--ink2); color: var(--ink2);
+}
+.btn-outline:hover { background: var(--ink); color: var(--cream); border-color: var(--ink); }
+
+/* SHOCK CARDS */
+.shock-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border2); border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; margin-bottom: 1.5rem; }
+.shock-card { background: var(--ivory); padding: 1.25rem 1rem; text-align: center; transition: background 0.2s; }
+.shock-card:hover { background: var(--emerald-pale); }
+.shock-bps-label { font-size: 9px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--ink3); margin-bottom: 10px; }
+.shock-price { font-family: var(--serif); font-size: 28px; font-weight: 600; line-height: 1; margin-bottom: 6px; }
+.shock-delta { font-family: var(--mono); font-size: 12px; }
+
+/* BADGE */
+.badge { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; letter-spacing: 0.06em; padding: 2px 8px; border-radius: 3px; font-weight: 500; }
+.badge-tes { background: var(--emerald-light); color: var(--emerald2); }
+.badge-cdt { background: var(--gold-light); color: var(--gold); }
+.badge-defi { background: #f0ecff; color: #5b21b6; }
+
+/* DEFI STRIP */
+.defi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: 1px; background: var(--border); border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; margin-bottom: 1.5rem; }
+.defi-cell { background: var(--ivory); padding: 1.1rem 1.25rem; }
+.defi-proto { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink3); margin-bottom: 6px; }
+.defi-rate { font-family: var(--serif); font-size: 30px; font-weight: 600; color: #5b21b6; line-height: 1; margin-bottom: 4px; }
+.defi-asset { font-size: 12px; color: var(--ink2); }
+.defi-net { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+
+/* PRIMA TABLE */
+.prima { background: var(--cream2); border: 1px solid var(--border2); border-radius: 6px; overflow: hidden; margin-bottom: 1.5rem; }
+.prima-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 1.25rem; border-bottom: 1px solid var(--border); }
+.prima-row:last-child { border-bottom: none; }
+.prima-key { font-size: 12px; color: var(--ink3); }
+.prima-val { font-family: var(--mono); font-size: 14px; color: var(--ink); }
+.prima-val.highlight { color: var(--emerald); font-weight: 500; }
+.prima-val.warn { color: var(--terracotta); }
+
+/* LEGEND ROW */
+.legend { display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+.leg { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink3); }
+.leg-line { width: 22px; height: 2.5px; border-radius: 2px; }
+
+/* NOTE */
+.note { font-size: 11px; color: var(--ink4); line-height: 1.7; margin-top: 1rem; padding: 0.75rem 1rem; border-left: 3px solid var(--border2); background: var(--cream2); border-radius: 0 4px 4px 0; }
+
+/* CHAPTER HEADER — decorative serif line before section */
+.chapter { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+.chapter-num { font-family: var(--serif); font-size: 48px; font-weight: 700; color: var(--border2); line-height: 1; flex-shrink: 0; }
+.chapter-text h2 { font-family: var(--serif); font-size: 22px; font-weight: 600; color: var(--ink); }
+.chapter-text p { font-size: 12px; color: var(--ink3); margin-top: 2px; }
+
+/* WATERMARK */
+.watermark { position: fixed; bottom: 1.5rem; right: 1.5rem; font-family: var(--serif); font-size: 11px; color: var(--ink4); font-style: italic; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<!-- MASTHEAD -->
+<header class="masthead">
+  <div class="masthead-top">
+    <div class="brand">
+      <div class="brand-title">Monitor <span>TES</span></div>
+      <div class="brand-sub">Análisis de Renta Fija · República de Colombia</div>
+    </div>
+    <div class="masthead-center">
+      <div class="republic-seal">CO</div>
+    </div>
+    <div class="masthead-right">
+      <div class="clock-display" id="clock">—</div>
+      <div class="date-display" id="dateline">—</div>
+    </div>
+  </div>
+  <div class="data-bar" id="dataBar">
+    <span class="data-item"><span class="data-dot static"></span>Cargando datos Banrep...</span>
+  </div>
+  <div class="ticker-outer">
+    <div class="ticker-track" id="ticker"></div>
+  </div>
+</header>
+
+<!-- NAV -->
+<nav class="nav-bar">
+  <div class="nav-item active" onclick="show('curva',this)">Curva TES</div>
+  <div class="nav-item" onclick="show('calc',this)">Calculadora</div>
+  <div class="nav-item" onclick="show('shocks',this)">Shocks</div>
+  <div class="nav-item" onclick="show('var',this)">VaR</div>
+  <div class="nav-item" onclick="show('cdt',this)">CDT vs TES</div>
+  <div class="nav-item" onclick="show('defi',this)">DeFi vs TES</div>
+  <div class="nav-right">
+    <span class="live-pip"><span class="pip"></span>En vivo</span>
+  </div>
+</nav>
+
+<!-- ═══════════════ MAIN ═══════════════ -->
+<div class="main">
+
+<!-- ══ CURVA ══ -->
+<div id="panel-curva" class="panel active">
+  <div class="chapter">
+    <div class="chapter-num">I.</div>
+    <div class="chapter-text">
+      <h2>Curva de <em>Rendimientos</em></h2>
+      <p>TES tasa fija COP · Referencial Precia PRO · Comparativo histórico 3, 6 y 12 meses</p>
+    </div>
+  </div>
+
+  <div class="kpi-strip" id="kpi-curva"></div>
+
+  <div class="col65">
+    <div class="box">
+      <div class="box-label">Curva actual vs histórico</div>
+      <div class="legend" id="leg-curva"></div>
+      <div class="chart-wrap" style="height:300px"><canvas id="chartCurva" role="img" aria-label="Curva de rendimientos TES Colombia"></canvas></div>
+    </div>
+    <div>
+      <div class="box" style="margin-bottom:1.25rem">
+        <div class="box-label">Pendiente de la curva</div>
+        <ul class="res-list">
+          <li class="res-item"><span class="res-key">2y − 10y (benchmark)</span><span class="res-val accent">+131 bps</span></li>
+          <li class="res-item"><span class="res-key">1y − 3y (tramo corto)</span><span class="res-val accent">+40 bps</span></li>
+          <li class="res-item"><span class="res-key">3y − 7y (tramo medio)</span><span class="res-val accent">+85 bps</span></li>
+          <li class="res-item"><span class="res-key">7y − 15y (tramo largo)</span><span class="res-val accent">+70 bps</span></li>
+          <li class="res-item"><span class="res-key">Forma</span><span class="res-val">Empinada normal</span></li>
+        </ul>
+      </div>
+      <div class="box">
+        <div class="box-label">Contexto macro</div>
+        <ul class="res-list">
+          <li class="res-item"><span class="res-key">Tasa Banrep</span><span class="res-val">9.75%</span></li>
+          <li class="res-item"><span class="res-key">IBR overnight</span><span class="res-val">9.74%</span></li>
+          <li class="res-item"><span class="res-key">IPC abr-2026</span><span class="res-val">5.84%</span></li>
+          <li class="res-item"><span class="res-key">Tasa real ex-post 10y</span><span class="res-val accent">+5.59%</span></li>
+          <li class="res-item"><span class="res-key">USD/COP</span><span class="res-val">4,285</span></li>
+          <li class="res-item"><span class="res-key">US T-Note 10y</span><span class="res-val">4.38%</span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CALCULADORA ══ -->
+<div id="panel-calc" class="panel">
+  <div class="chapter">
+    <div class="chapter-num">II.</div>
+    <div class="chapter-text">
+      <h2>Calculadora de <em>Precio & Duración</em></h2>
+      <p>Precio limpio/sucio · YTM · Macaulay · Modificada · Convexidad · DV01</p>
+    </div>
+  </div>
+
+  <div class="col65">
+    <div class="box">
+      <div class="box-label">Parámetros del instrumento</div>
+      <div class="form-group">
+        <label class="form-label">Referencia TES (presets)</label>
+        <select class="form-select" id="calcBono" onchange="onBonoSelect()">
+          <option value="">— Seleccionar referencia —</option>
+          <option value="7|1.5|7">TFIT07 nov-2027 · 7% · 1.5a</option>
+          <option value="10|2.0|10" selected>TFIT10 abr-2028 · 10% · 2.0a</option>
+          <option value="7|6.2|10.84">TFIT16 jul-2032 · 7% · 6.2a</option>
+          <option value="7.25|7.0|11.20">TFIT16 abr-2033 · 7.25% · 7.0a</option>
+          <option value="6|14.2|11.43">TFIT06 ago-2040 · 6% · 14.2a</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Cupón anual (%)</label><input class="form-input" type="number" id="cCupon" value="10" step="0.25" oninput="calcFromYTM()"></div>
+        <div class="form-group"><label class="form-label">Plazo residual (años)</label><input class="form-input" type="number" id="cAnios" value="2.0" step="0.25" oninput="calcFromYTM()"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">YTM (%) → resuelve precio</label><input class="form-input" type="number" id="cYTM" value="10.84" step="0.01" oninput="calcFromYTM()"></div>
+        <div class="form-group"><label class="form-label">Precio limpio → resuelve YTM</label><input class="form-input" type="number" id="cPrecio" value="" step="0.01" placeholder="ej. 98.50" oninput="calcFromPrecio()"></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">Días cupón corrido</label><input class="form-input" type="number" id="cDias" value="45" step="1" oninput="calcFromYTM()"></div>
+        <div class="form-group"><label class="form-label">Valor nominal (COP M)</label><input class="form-input" type="number" id="cNominal" value="1000" step="100" oninput="calcFromYTM()"></div>
+      </div>
+      <button class="btn" onclick="calcFromYTM()">Calcular →</button>
+
+      <div style="margin-top:1.5rem">
+        <div class="box-label">Flujo de caja proyectado</div>
+        <div class="chart-wrap" style="height:180px"><canvas id="chartFlujo" role="img" aria-label="Flujo de caja"></canvas></div>
+      </div>
+    </div>
+
+    <div class="box">
+      <div class="box-label">Resultados</div>
+      <ul class="res-list" id="calcResults"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SHOCKS ══ -->
+<div id="panel-shocks" class="panel">
+  <div class="chapter">
+    <div class="chapter-num">III.</div>
+    <div class="chapter-text">
+      <h2>Simulador de <em>Shocks de Tasa</em></h2>
+      <p>Impacto en precio con aproximación de segundo orden: duración + convexidad</p>
+    </div>
+  </div>
+
+  <div class="box" style="margin-bottom:1.5rem">
+    <div class="box-label">Parámetros base</div>
+    <div class="col3">
+      <div class="form-group"><label class="form-label">YTM base (%)</label><input class="form-input" type="number" id="sYTM" value="10.84" step="0.01" oninput="calcShocks()"></div>
+      <div class="form-group"><label class="form-label">Duración modificada</label><input class="form-input" type="number" id="sDurMod" value="4.37" step="0.01" oninput="calcShocks()"></div>
+      <div class="form-group"><label class="form-label">Convexidad</label><input class="form-input" type="number" id="sConvex" value="26.4" step="0.1" oninput="calcShocks()"></div>
+    </div>
+    <div class="form-row" style="max-width:500px">
+      <div class="form-group"><label class="form-label">Precio base (%VN)</label><input class="form-input" type="number" id="sPrecioBase" value="92.45" step="0.01" oninput="calcShocks()"></div>
+      <div class="form-group"><label class="form-label">VN (COP millones)</label><input class="form-input" type="number" id="sNominal" value="1000" step="100" oninput="calcShocks()"></div>
+    </div>
+  </div>
+
+  <div class="shock-grid" id="shockCards"></div>
+
+  <div class="col2">
+    <div class="box">
+      <div class="box-label">Curva precio / yield completa</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chartShock" role="img" aria-label="Precio vs yield"></canvas></div>
+    </div>
+    <div class="col2" style="gap:1rem;margin-bottom:0">
+      <div class="box">
+        <div class="box-label">P&amp;L monetario (COP)</div>
+        <ul class="res-list" id="shockPnL"></ul>
+      </div>
+      <div class="box">
+        <div class="box-label">Sensibilidades</div>
+        <ul class="res-list" id="shockSens"></ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ VAR ══ -->
+<div id="panel-var" class="panel">
+  <div class="chapter">
+    <div class="chapter-num">IV.</div>
+    <div class="chapter-text">
+      <h2>VaR del <em>Portafolio</em></h2>
+      <p>Método delta-normal · Distribución normal de variaciones de tasa</p>
+    </div>
+  </div>
+
+  <div class="box" style="margin-bottom:1.5rem">
+    <div class="box-label">Parámetros del modelo</div>
+    <div class="col3">
+      <div class="form-group">
+        <label class="form-label">Nivel de confianza</label>
+        <select class="form-select" id="varConf" onchange="calcVaR()">
+          <option value="1.645">95% (z = 1.645)</option>
+          <option value="2.326" selected>99% (z = 2.326)</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Horizonte (días)</label><input class="form-input" type="number" id="varH" value="1" min="1" max="252" oninput="calcVaR()"></div>
+      <div class="form-group"><label class="form-label">Vol. histórica (bps/día σ)</label><input class="form-input" type="number" id="varVol" value="8.5" step="0.5" oninput="calcVaR()"></div>
+    </div>
+  </div>
+
+  <div class="box" style="margin-bottom:1.5rem">
+    <div class="box-label">Composición del portafolio</div>
+    <table class="dt">
+      <thead><tr><th>Referencia</th><th>VN (M COP)</th><th>Precio</th><th>Dur. Mod.</th><th>DV01 (COP)</th><th>VaR 1d</th></tr></thead>
+      <tbody id="varBody"></tbody>
+      <tfoot><tr><td colspan="4">Total portafolio</td><td id="varTotalDv01">—</td><td id="varTotalVaR" style="color:var(--terracotta)">—</td></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="kpi-strip" id="varKpis"></div>
+
+  <div class="col2">
+    <div class="box">
+      <div class="box-label">DV01 vs VaR por posición</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chartVaR" role="img" aria-label="VaR y DV01 por posición"></canvas></div>
+    </div>
+    <div class="box">
+      <div class="box-label">Distribución de pérdidas simulada</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chartVaRDist" role="img" aria-label="Distribución de P&L"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CDT ══ -->
+<div id="panel-cdt" class="panel">
+  <div class="chapter">
+    <div class="chapter-num">V.</div>
+    <div class="chapter-text">
+      <h2>CDT vs <em>TES</em></h2>
+      <p>Rendimiento neto de retención en fuente · Art. 218 y 395 E.T.</p>
+    </div>
+  </div>
+
+  <div class="box" style="margin-bottom:1.5rem">
+    <div class="box-label">Parámetros de la simulación</div>
+    <div class="form-row" style="max-width:480px">
+      <div class="form-group"><label class="form-label">Capital (COP millones)</label><input class="form-input" type="number" id="cdtInv" value="500" step="50" oninput="calcCDT()"></div>
+      <div class="form-group"><label class="form-label">Horizonte (años)</label><input class="form-input" type="number" id="cdtPlazo" value="3" step="0.5" min="0.5" oninput="calcCDT()"></div>
+    </div>
+  </div>
+
+  <div class="box" style="margin-bottom:1.5rem">
+    <div class="box-label">Comparativo de instrumentos</div>
+    <table class="dt"><thead><tr><th>Instrumento</th><th>Tipo</th><th>Tasa bruta</th><th>Retención</th><th>Tasa neta</th><th>Rendimiento</th><th>Capital final</th></tr></thead>
+      <tbody id="cdtBody"></tbody>
+    </table>
+  </div>
+
+  <div class="col2">
+    <div class="box">
+      <div class="box-label">Tasa neta comparada (%)</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chartCDT" role="img" aria-label="Tasa neta CDT vs TES"></canvas></div>
+    </div>
+    <div class="box">
+      <div class="box-label">Capital acumulado al vencimiento (COP M)</div>
+      <div class="chart-wrap" style="height:240px"><canvas id="chartCDT2" role="img" aria-label="Capital acumulado"></canvas></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Retención en fuente:</strong> CDT: 4% sobre rendimientos (Art. 395 E.T., personas naturales residentes).
+    TES: exentos de retención en fuente para personas naturales (Art. 218 E.T.). Tasas CDT referenciales SF Colombia.
+    No constituye asesoría de inversión.
+  </div>
+</div>
+
+<!-- ══ DEFI ══ -->
+<div id="panel-defi" class="panel">
+  <div class="chapter">
+    <div class="chapter-num">VI.</div>
+    <div class="chapter-text">
+      <h2>DeFi vs <em>TES</em> — Prima Soberana</h2>
+      <p>Tasas Aave v3 en USD vs deuda soberana colombiana en COP · Análisis de spread</p>
+    </div>
+  </div>
+
+  <div class="defi-strip">
+    <div class="defi-cell"><div class="defi-proto">Aave v3 · Arbitrum</div><div class="defi-rate">5.82%</div><div class="defi-asset">USDC supply APY</div><div class="defi-net">Sin riesgo crediticio soberano</div></div>
+    <div class="defi-cell"><div class="defi-proto">Aave v3 · Arbitrum</div><div class="defi-rate">5.94%</div><div class="defi-asset">USDT supply APY</div><div class="defi-net">Sin riesgo crediticio soberano</div></div>
+    <div class="defi-cell"><div class="defi-proto">Aave v3 · Ethereum</div><div class="defi-rate">5.61%</div><div class="defi-asset">USDC supply APY</div><div class="defi-net">Sin riesgo crediticio soberano</div></div>
+    <div class="defi-cell"><div class="defi-proto">Aave v3 · Polygon</div><div class="defi-rate">5.75%</div><div class="defi-asset">USDC supply APY</div><div class="defi-net">Sin riesgo crediticio soberano</div></div>
+  </div>
+
+  <div class="prima">
+    <div class="prima-row"><span class="prima-key">TES 10y en COP (nominal)</span><span class="prima-val">11.43%</span></div>
+    <div class="prima-row"><span class="prima-key">Aave USDC promedio (USD)</span><span class="prima-val">5.78%</span></div>
+    <div class="prima-row"><span class="prima-key">Spread bruto COP vs USD-DeFi</span><span class="prima-val warn">+565 bps</span></div>
+    <div class="prima-row"><span class="prima-key">Devaluación COP/USD implícita (UIP)</span><span class="prima-val">~5.30% anual</span></div>
+    <div class="prima-row"><span class="prima-key">Prima soberana ajustada por FX</span><span class="prima-val highlight">~35 bps</span></div>
+    <div class="prima-row"><span class="prima-key">US T-Note 10y (libre riesgo USD)</span><span class="prima-val">4.38%</span></div>
+    <div class="prima-row"><span class="prima-key">EMBI Colombia (spread soberano)</span><span class="prima-val warn">~228 bps</span></div>
+  </div>
+
+  <div class="col2">
+    <div class="box">
+      <div class="box-label">TES COP vs tasas DeFi USD</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chartDefi1" role="img" aria-label="TES vs DeFi"></canvas></div>
+    </div>
+    <div class="box">
+      <div class="box-label">Descomposición spread TES 10y</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="chartDefi2" role="img" aria-label="Spread descompuesto"></canvas></div>
+    </div>
+  </div>
+
+  <div class="note">
+    ⚠ Las tasas DeFi no incluyen riesgo de smart contract, riesgo de liquidez ni riesgo de depeg de stablecoins.
+    La comparación directa con TES requiere ajuste por diferencial cambiario COP/USD vía paridad de tasas (UIP).
+    Esta herramienta es de carácter educativo y no constituye asesoría de inversión.
+  </div>
+</div>
+
+</div><!-- /main -->
+
+<div class="watermark">Monitor TES · Colombia · 2026</div>
+
+<script>
+// ── CLOCK ──────────────────────────────────────────────────────
+function tick(){
+  const n=new Date();
+  document.getElementById('clock').textContent=n.toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit',second:'2-digit'})+' COT';
+  document.getElementById('dateline').textContent=n.toLocaleDateString('es-CO',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+}
+tick(); setInterval(tick,1000);
+
+// ── DATOS EN TIEMPO REAL — Banrep SDMX API ─────────────────────
+// Proxy público CORS para llamar a totoro.banrep.gov.co desde el browser
+const PROXY = 'https://api.allorigins.win/get?url=';
+const BANREP = 'https://totoro.banrep.gov.co/nsi-jax-ws/rest/data';
+
+// IDs de series SDMX Banrep (FLOW_ID: ESTAT,DF_XXX_DAILY_LATEST,1.0)
+const SERIES = {
+  ibr:  'ESTAT,DF_IBR_DAILY_LATEST,1.0',     // IBR overnight
+  trm:  'ESTAT,DF_TRM_DAILY_LATEST,1.0',     // TRM USD/COP
+  ipc:  'ESTAT,DF_IPC_MONTHLY_LATEST,1.0',   // Inflación
+  tpol: 'ESTAT,DF_TPOL_DAILY_LATEST,1.0',    // Tasa política Banrep
+};
+
+// Estado global de datos vivos
+const LIVE = {
+  ibr: null, trm: null, ipc: null, tpol: null,
+  fuente: 'Referencial',
+  timestamp: null,
+};
+
+// Fallback datos referencia (por si CORS falla)
+const FALLBACK = {
+  ibr: 9.75, trm: 4285, ipc: 5.84, tpol: 11.25,
+};
+
+// Parser XML SDMX → extrae el último ObsValue
+function parseSDMX(xmlText) {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, 'application/xml');
+    const obs = doc.querySelectorAll('Obs');
+    if (!obs.length) return null;
+    const last = obs[obs.length - 1];
+    return parseFloat(last.getAttribute('OBS_VALUE') || last.getAttribute('obsValue'));
+  } catch(e) { return null; }
+}
+
+// Fetch una serie via proxy allorigins
+async function fetchSerie(flowId) {
+  const url = `${BANREP}/data/${flowId}?dimensionAtObservation=TIME_PERIOD`;
+  const proxyUrl = PROXY + encodeURIComponent(url);
+  const resp = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+  const json = await resp.json();
+  return parseSDMX(json.contents);
+}
+
+// Cargar todos los indicadores en paralelo
+async function loadLiveData() {
+  const dataBar = document.getElementById('dataBar');
+  dataBar.innerHTML = '<span class="data-item"><span class="data-dot live"></span>Conectando con Banrep SDMX...</span>';
+
+  try {
+    const [ibr, trm, ipc, tpol] = await Promise.allSettled([
+      fetchSerie(SERIES.ibr),
+      fetchSerie(SERIES.trm),
+      fetchSerie(SERIES.ipc),
+      fetchSerie(SERIES.tpol),
+    ]);
+
+    let liveCount = 0;
+    if (ibr.status==='fulfilled' && ibr.value) { LIVE.ibr = ibr.value; liveCount++; }
+    else LIVE.ibr = FALLBACK.ibr;
+
+    if (trm.status==='fulfilled' && trm.value) { LIVE.trm = trm.value; liveCount++; }
+    else LIVE.trm = FALLBACK.trm;
+
+    if (ipc.status==='fulfilled' && ipc.value) { LIVE.ipc = ipc.value; liveCount++; }
+    else LIVE.ipc = FALLBACK.ipc;
+
+    if (tpol.status==='fulfilled' && tpol.value) { LIVE.tpol = tpol.value; liveCount++; }
+    else LIVE.tpol = FALLBACK.tpol;
+
+    LIVE.timestamp = new Date().toLocaleTimeString('es-CO',{hour:'2-digit',minute:'2-digit'});
+
+    const isLive = liveCount > 0;
+    LIVE.fuente = isLive ? 'Banrep SDMX' : 'Referencial';
+
+    dataBar.innerHTML = `
+      <span class="data-item"><span class="data-dot ${isLive?'live':'static'}"></span>
+        ${isLive ? `<span class="tick-live">Datos en tiempo real</span>` : 'Datos de referencia'}
+        · Fuente: <strong>${LIVE.fuente}</strong>
+      </span>
+      <span class="data-item">IBR ON: <strong>${LIVE.ibr.toFixed(3)}%</strong></span>
+      <span class="data-item">TRM: <strong>${Math.round(LIVE.trm).toLocaleString('es-CO')}</strong> COP/USD</span>
+      <span class="data-item">IPC: <strong>${LIVE.ipc.toFixed(2)}%</strong></span>
+      <span class="data-item">Banrep: <strong>${LIVE.tpol.toFixed(2)}%</strong></span>
+      <span class="data-item" style="margin-left:auto;color:var(--ink4)">Actualizado ${LIVE.timestamp} COT</span>
+    `;
+
+    // Actualizar KPIs de curva con datos reales
+    updateKPIsWithLive();
+    // Re-render ticker con datos vivos
+    buildTicker();
+
+  } catch(e) {
+    LIVE.ibr = FALLBACK.ibr; LIVE.trm = FALLBACK.trm;
+    LIVE.ipc = FALLBACK.ipc; LIVE.tpol = FALLBACK.tpol;
+    dataBar.innerHTML = '<span class="data-item"><span class="data-dot static"></span>Datos de referencia (sin conexión a Banrep)</span>';
+    buildTicker();
+  }
+}
+
+// Construir ticker animado infinito con datos actuales
+function buildTicker() {
+  const tb = document.getElementById('ticker');
+  const items = [
+    {k:'IBR ON',  v: LIVE.ibr  ? LIVE.ibr.toFixed(3)+'%'  : '—', c:null, src:'Banrep'},
+    {k:'TES 1y',  v:'9.95%',  c:'+8bps', up:true,  src:'Precia'},
+    {k:'TES 2y',  v:'10.12%', c:'+8bps', up:true,  src:'Precia'},
+    {k:'TES 5y',  v:'10.84%', c:'+6bps', up:true,  src:'Precia'},
+    {k:'TES 10y', v:'11.43%', c:'+4bps', up:true,  src:'Precia'},
+    {k:'TES 15y', v:'11.90%', c:'-2bps', up:false, src:'Precia'},
+    {k:'USD/COP', v: LIVE.trm  ? Math.round(LIVE.trm).toLocaleString('es-CO') : '—', c:null, src:'Banrep'},
+    {k:'Banrep',  v: LIVE.tpol ? LIVE.tpol.toFixed(2)+'%' : '—', c:null, src:'Banrep'},
+    {k:'IPC',     v: LIVE.ipc  ? LIVE.ipc.toFixed(2)+'%'  : '—', c:null, src:'Banrep'},
+    {k:'US T10y', v:'4.38%',  c:'-3bps', up:false, src:'Bloomberg'},
+    {k:'EMBI Col',v:'228bps', c:'+5',    up:true,  src:'JPMorgan'},
+  ];
+
+  // Duplicar para scroll infinito continuo
+  const all = [...items, ...items];
+  tb.innerHTML = all.map(t => {
+    const chg = t.c ? `<span class="tick-chg ${t.up?'up':'dn'}">${t.c}</span>` : '';
+    return `<span class="tick"><span class="tick-key">${t.k}</span><span class="tick-val">${t.v}</span>${chg}<span class="tick-source">${t.src}</span></span>`;
+  }).join('');
+}
+
+function updateKPIsWithLive() {
+  // Actualizar grid de KPIs en panel curva con datos reales
+  const kpiGrid = document.getElementById('kpi-curva');
+  if (!kpiGrid) return;
+  const items = [
+    {l:'IBR ON',    v: LIVE.ibr  ? LIVE.ibr.toFixed(3)+'%'  : '9.750%', c:null},
+    {l:'TES 1y',    v:'9.95%',  c:+8},
+    {l:'TES 2y',    v:'10.12%', c:+8},
+    {l:'TES 5y',    v:'10.84%', c:+6},
+    {l:'TES 10y',   v:'11.43%', c:+4},
+    {l:'TES 15y',   v:'11.90%', c:-2},
+  ];
+  kpiGrid.innerHTML = items.map((m,i) => {
+    const cls = m.c===null?'flat':m.c>0?'up':'dn';
+    const sub = m.c===null
+      ? (i===0 ? `Banrep ${LIVE.tpol?LIVE.tpol.toFixed(2)+'% pol.':''} · ${LIVE.fuente}` : LIVE.fuente)
+      : m.c>0 ? `▲ +${m.c} bps hoy` : `▼ ${m.c} bps hoy`;
+    return `<div class="kpi"><div class="kpi-label">${m.l}</div><div class="kpi-val">${m.v}</div><div class="kpi-chg ${cls}">${sub}</div></div>`;
+  }).join('');
+}
+
+// Arrancar carga de datos (no bloqueante)
+buildTicker(); // render inmediato con fallback
+loadLiveData(); // luego actualiza con datos reales
+// Refrescar cada 5 minutos
+setInterval(loadLiveData, 5 * 60 * 1000);
+
+// ── NAV ────────────────────────────────────────────────────────
+const _initialized={};
+function show(id,el){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('panel-'+id).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  // Lazy init panels that need visible DOM to render charts
+  if(!_initialized[id]){
+    _initialized[id]=true;
+    if(id==='var') calcVaR();
+    if(id==='cdt') calcCDT();
+    if(id==='defi') initDefi();
+    if(id==='shocks') calcShocks();
+  }
+}
+
+// ── DATA ───────────────────────────────────────────────────────
+const MATS=[1,2,3,5,7,10,15];
+const NOW= [9.95,10.12,10.35,10.84,11.20,11.43,11.90];
+const M3=  [9.60,9.80,10.05,10.52,10.88,11.12,11.62];
+const M6=  [10.40,10.62,10.85,11.30,11.68,11.92,12.35];
+const M12= [11.20,11.45,11.70,12.10,12.45,12.72,13.10];
+
+// ── KPI CURVA ──────────────────────────────────────────────────
+const KPI_DATA=[
+  {l:'IBR ON',v:'9.75%',c:null},{l:'TES 1y',v:'9.95%',c:+8},
+  {l:'TES 2y',v:'10.12%',c:+8},{l:'TES 5y',v:'10.84%',c:+6},
+  {l:'TES 10y',v:'11.43%',c:+4},{l:'TES 15y',v:'11.90%',c:-2},
+];
+document.getElementById('kpi-curva').innerHTML=KPI_DATA.map(k=>{
+  const cls=k.c===null?'flat':k.c>0?'up':'dn';
+  const txt=k.c===null?'Banrep ref.':k.c>0?`▲ +${k.c} bps hoy`:`▼ ${k.c} bps hoy`;
+  return `<div class="kpi"><div class="kpi-label">${k.l}</div><div class="kpi-val">${k.v}</div><div class="kpi-chg ${cls}">${txt}</div></div>`;
+}).join('');
+
+// ── CHART CURVA ────────────────────────────────────────────────
+const LEG_ITEMS=[{c:'#0d6b4f',l:'Hoy'},{c:'#2563eb',l:'Hace 3 meses'},{c:'#b8860b',l:'Hace 6 meses'},{c:'#c4502a',l:'Hace 12 meses'}];
+document.getElementById('leg-curva').innerHTML=LEG_ITEMS.map(l=>`<div class="leg"><div class="leg-line" style="background:${l.c}"></div>${l.l}</div>`).join('');
+
+new Chart(document.getElementById('chartCurva').getContext('2d'),{
+  type:'line',
+  data:{
+    labels:MATS.map(m=>m+'y'),
+    datasets:[
+      {label:'Hoy',data:NOW,borderColor:'#0d6b4f',borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#0d6b4f',pointBorderColor:'#fff',pointBorderWidth:2,tension:0.4,fill:false},
+      {label:'3m', data:M3, borderColor:'#2563eb',borderWidth:1.5,borderDash:[6,3],pointRadius:3,tension:0.4,fill:false},
+      {label:'6m', data:M6, borderColor:'#b8860b',borderWidth:1.5,borderDash:[6,3],pointRadius:3,tension:0.4,fill:false},
+      {label:'12m',data:M12,borderColor:'#c4502a',borderWidth:1.5,borderDash:[3,3],pointRadius:3,tension:0.4,fill:false},
+    ]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{mode:'index',intersect:false,callbacks:{label:c=>`${c.dataset.label}: ${c.parsed.y.toFixed(2)}%`}}},
+    scales:{
+      y:{min:9.0,max:13.5,grid:{color:'rgba(26,21,16,0.05)'},ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:11},callback:v=>v.toFixed(2)+'%'}},
+      x:{grid:{display:false},ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:11}}}
+    }
+  }
+});
+
+// ── CALCULADORA ────────────────────────────────────────────────
+let flujoChart=null;
+function onBonoSelect(){
+  const v=document.getElementById('calcBono').value;
+  if(!v)return;
+  const p=v.split('|');
+  document.getElementById('cCupon').value=p[0];
+  document.getElementById('cAnios').value=p[1];
+  document.getElementById('cYTM').value=p[2];
+  document.getElementById('cPrecio').value='';
+  calcFromYTM();
+}
+function calcFromPrecio(){
+  const P=parseFloat(document.getElementById('cPrecio').value);
+  if(!P||isNaN(P))return;
+  const c=parseFloat(document.getElementById('cCupon').value)||7;
+  const T=parseFloat(document.getElementById('cAnios').value)||5;
+  let lo=0.0001,hi=0.99,ytm=0.1;
+  for(let i=0;i<100;i++){
+    ytm=(lo+hi)/2;
+    let p=0;
+    for(let t=1;t<=Math.ceil(T);t++){const cf=t<Math.ceil(T)?c:c+100;p+=cf/Math.pow(1+ytm,t);}
+    if(p>P)lo=ytm;else hi=ytm;
+  }
+  document.getElementById('cYTM').value=(ytm*100).toFixed(4);
+  calcBond(true);
+}
+function calcFromYTM(){calcBond(false);}
+function calcBond(fromP){
+  const c=parseFloat(document.getElementById('cCupon').value)||7;
+  const T=parseFloat(document.getElementById('cAnios').value)||5;
+  const ytm=parseFloat(document.getElementById('cYTM').value)/100||0.1084;
+  const dias=parseFloat(document.getElementById('cDias').value)||0;
+  const VN=parseFloat(document.getElementById('cNominal').value)||1000;
+  const n=Math.ceil(T);
+  let precio=0,numD=0;
+  const flujos=[],tiempos=[];
+  for(let t=1;t<=n;t++){
+    const cf=t<n?c:c+100;
+    const pv=cf/Math.pow(1+ytm,t);
+    precio+=pv; numD+=t*pv;
+    flujos.push(parseFloat(cf.toFixed(2)));
+    tiempos.push('T+'+t+'y');
+  }
+  if(!fromP)document.getElementById('cPrecio').value=precio.toFixed(4);
+  const macD=numD/precio;
+  const durMod=macD/(1+ytm);
+  const accrued=c*(dias/365);
+  const dirty=precio+accrued;
+  let cx=0;
+  for(let t=1;t<=n;t++){const cf=t<n?c:c+100;cx+=cf*t*(t+1)/Math.pow(1+ytm,t+2);}
+  cx/=precio;
+  const dv01=durMod*precio/100*VN*1e6*0.0001;
+  const monto=dirty/100*VN*1e6;
+  const rows=[
+    ['Precio limpio (%VN)',precio.toFixed(4)+'%','accent'],
+    ['Cupón corrido (%VN)',accrued.toFixed(4)+'%',''],
+    ['Precio sucio (%VN)',dirty.toFixed(4)+'%','accent'],
+    ['YTM',(ytm*100).toFixed(4)+'%',''],
+    ['Duración Macaulay',macD.toFixed(4)+' años',''],
+    ['Duración modificada',durMod.toFixed(4),''],
+    ['Convexidad',cx.toFixed(2),''],
+    ['DV01','COP '+Math.round(dv01).toLocaleString('es-CO'),''],
+    ['Monto efectivo','COP '+Math.round(monto).toLocaleString('es-CO'),'accent'],
+  ];
+  document.getElementById('calcResults').innerHTML=rows.map(r=>`<li class="res-item"><span class="res-key">${r[0]}</span><span class="res-val ${r[2]}">${r[1]}</span></li>`).join('');
+  // Flujo
+  if(flujoChart)flujoChart.destroy();
+  flujoChart=new Chart(document.getElementById('chartFlujo').getContext('2d'),{
+    type:'bar',
+    data:{labels:tiempos,datasets:[{label:'Flujo',data:flujos,backgroundColor:flujos.map((_,i)=>i===flujos.length-1?'#0d6b4f':'#c8ddd5'),borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
+      y:{grid:{color:'rgba(26,21,16,0.05)'},ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10},callback:v=>v+'%'}},
+      x:{grid:{display:false},ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10}}}
+    }}
+  });
+  // auto-fill shocks fields (lazy render when panel opens)
+  document.getElementById('sYTM').value=(ytm*100).toFixed(2);
+  document.getElementById('sDurMod').value=durMod.toFixed(2);
+  document.getElementById('sConvex').value=cx.toFixed(2);
+  document.getElementById('sPrecioBase').value=precio.toFixed(4);
+  if(document.getElementById('panel-shocks').classList.contains('active')) calcShocks();
+}
+calcBond(false);
+
+// ── SHOCKS ─────────────────────────────────────────────────────
+let shockChart=null;
+function calcShocks(){
+  const ytm=parseFloat(document.getElementById('sYTM').value)||10.84;
+  const Dm=parseFloat(document.getElementById('sDurMod').value)||4.37;
+  const Cx=parseFloat(document.getElementById('sConvex').value)||26.4;
+  const P0=parseFloat(document.getElementById('sPrecioBase').value)||92.45;
+  const VN=parseFloat(document.getElementById('sNominal').value)||1000;
+  const displayBps=[0,50,100,200];
+  document.getElementById('shockCards').innerHTML=displayBps.map(bps=>{
+    const dy=bps/10000;
+    const dpct=-Dm*dy*100+0.5*Cx*dy*dy*100;
+    const newP=P0*(1+dpct/100);
+    const pcol=bps===0?'var(--ink)':bps<0?'var(--emerald)':'var(--terracotta)';
+    const dcol=dpct>=0?'color:var(--terracotta)':'color:var(--emerald)';
+    return `<div class="shock-card">
+      <div class="shock-bps-label">${bps===0?'Base':'+'+bps+' bps'}</div>
+      <div class="shock-price" style="color:${pcol}">${newP.toFixed(2)}%</div>
+      <div class="shock-delta" style="${dcol}">${dpct>=0?'+':''}${dpct.toFixed(3)}%</div>
+    </div>`;
+  }).join('');
+  const allBps=[-200,-150,-100,-50,0,50,100,150,200];
+  const prices=allBps.map(b=>{const dy=b/10000;return parseFloat((P0*(1+(-Dm*dy+0.5*Cx*dy*dy))).toFixed(3));});
+  if(shockChart)shockChart.destroy();
+  shockChart=new Chart(document.getElementById('chartShock').getContext('2d'),{
+    type:'line',
+    data:{labels:allBps.map(b=>(b>=0?'+':'')+b+'bps'),datasets:[{
+      label:'Precio',data:prices,borderColor:'#0d6b4f',borderWidth:2.5,
+      pointRadius:allBps.map(b=>b===0?7:3),
+      pointBackgroundColor:allBps.map(b=>b===0?'#0d6b4f':b>0?'#c4502a':'#0d6b4f'),
+      pointBorderColor:'#fff',pointBorderWidth:2,
+      fill:false,tension:0.4
+    }]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>`Precio: ${c.parsed.y.toFixed(3)}%`}}},
+      scales:{
+        y:{grid:{color:'rgba(26,21,16,0.05)'},ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10},callback:v=>v.toFixed(1)+'%'}},
+        x:{grid:{display:false},ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10}}}
+      }
+    }
+  });
+  document.getElementById('shockPnL').innerHTML=[-200,-100,-50,0,50,100,200].map(bps=>{
+    const dy=bps/10000;
+    const dpct=-Dm*dy*100+0.5*Cx*dy*dy*100;
+    const pnl=(P0*(1+dpct/100)-P0)/100*VN*1e6;
+    const cls=pnl>=0?'accent':'warn';
+    return `<li class="res-item"><span class="res-key">${bps>=0?'+':''}${bps} bps</span><span class="res-val ${cls}">COP ${Math.round(pnl).toLocaleString('es-CO')}</span></li>`;
+  }).join('');
+  const dv01=Dm*P0/100*VN*1e6*0.0001;
+  document.getElementById('shockSens').innerHTML=[
+    ['DV01 (1 bps)','COP '+Math.round(dv01).toLocaleString('es-CO')],
+    ['DV10 (10 bps)','COP '+Math.round(dv01*10).toLocaleString('es-CO')],
+    ['Dur. modificada',Dm.toFixed(4)],
+    ['Convexidad',Cx.toFixed(2)],
+    ['YTM base',ytm.toFixed(2)+'%'],
+    ['Precio base',P0.toFixed(4)+'%'],
+  ].map(r=>`<li class="res-item"><span class="res-key">${r[0]}</span><span class="res-val">${r[1]}</span></li>`).join('');
+}
+
+// ── VAR ────────────────────────────────────────────────────────
+const PORT=[
+  {n:'TFIT07 nov-2027',vn:2000,p:97.82,dm:1.42,dv01:277900},
+  {n:'TFIT10 abr-2028',vn:1000,p:97.10,dm:1.86,dv01:180800},
+  {n:'TFIT16 jul-2032',vn:800, p:92.45,dm:4.37,dv01:323200},
+  {n:'TFIT16 abr-2033',vn:500, p:89.20,dm:5.12,dv01:228100},
+  {n:'TES ago-2040',   vn:300, p:78.30,dm:8.91,dv01:209600},
+];
+let varChart=null,varDistChart=null;
+function calcVaR(){
+  const z=parseFloat(document.getElementById('varConf').value)||2.326;
+  const h=parseInt(document.getElementById('varH').value)||1;
+  const vol=parseFloat(document.getElementById('varVol').value)||8.5;
+  let totDv01=0,totVaR=0;
+  const varVals=[];
+  document.getElementById('varBody').innerHTML=PORT.map(b=>{
+    const v=b.dv01*vol*z*Math.sqrt(h);
+    totDv01+=b.dv01;totVaR+=v;varVals.push(Math.round(v));
+    return `<tr><td>${b.n}</td><td>${b.vn.toLocaleString('es-CO')}</td><td>${b.p.toFixed(2)}%</td><td>${b.dm.toFixed(2)}</td><td>${b.dv01.toLocaleString('es-CO')}</td><td style="color:var(--terracotta)">-COP ${Math.round(v).toLocaleString('es-CO')}</td></tr>`;
+  }).join('');
+  document.getElementById('varTotalDv01').textContent='COP '+totDv01.toLocaleString('es-CO');
+  document.getElementById('varTotalVaR').textContent='-COP '+Math.round(totVaR).toLocaleString('es-CO');
+  const conf=z===2.326?'99%':'95%';
+  const pctDur=(PORT.reduce((a,b)=>a+b.dm*b.vn,0)/PORT.reduce((a,b)=>a+b.vn,0));
+  document.getElementById('varKpis').innerHTML=[
+    {l:`VaR 1d (${conf})`,v:'-COP '+Math.round(totVaR).toLocaleString('es-CO'),c:'up'},
+    {l:`VaR 10d (${conf})`,v:'-COP '+Math.round(totVaR*Math.sqrt(10)).toLocaleString('es-CO'),c:'up'},
+    {l:'DV01 total',v:'COP '+totDv01.toLocaleString('es-CO'),c:'flat'},
+    {l:'Dur. ponderada',v:pctDur.toFixed(2)+' años',c:'flat'},
+  ].map(k=>`<div class="kpi"><div class="kpi-label">${k.l}</div><div class="kpi-val" style="font-size:20px">${k.v}</div></div>`).join('');
+  if(varChart)varChart.destroy();
+  varChart=new Chart(document.getElementById('chartVaR').getContext('2d'),{
+    type:'bar',
+    data:{labels:PORT.map(b=>b.n.split(' ')[0]),datasets:[
+      {label:'DV01',data:PORT.map(b=>b.dv01),backgroundColor:'#c8ddd5',borderRadius:3},
+      {label:'VaR 1d',data:varVals,backgroundColor:'rgba(196,80,42,0.5)',borderRadius:3},
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
+      y:{grid:{color:'rgba(26,21,16,0.05)'},ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10},callback:v=>(v/1e6).toFixed(1)+'M'}},
+      x:{grid:{display:false},ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10}}}
+    }}
+  });
+  // Distribution sim
+  if(varDistChart)varDistChart.destroy();
+  const sigma=totDv01*vol/1e6;
+  const xs=[],ys=[];
+  for(let i=-4;i<=4;i+=0.15){
+    xs.push((i*sigma).toFixed(1));
+    ys.push(Math.exp(-0.5*i*i)/(Math.sqrt(2*Math.PI)));
+  }
+  varDistChart=new Chart(document.getElementById('chartVaRDist').getContext('2d'),{
+    type:'line',
+    data:{labels:xs,datasets:[{label:'Distribución',data:ys,borderColor:'#2563eb',borderWidth:2,fill:true,backgroundColor:'rgba(37,99,235,0.08)',tension:0.4,pointRadius:0}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
+      y:{display:false},
+      x:{ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:9},maxTicksLimit:8},grid:{display:false}}
+    }}
+  });
+}
+
+// ── CDT ────────────────────────────────────────────────────────
+const CDT_DATA=[
+  {n:'CDT Bancolombia',bruta:11.40,ret:0.04,tipo:'CDT'},{n:'CDT Davivienda',bruta:11.20,ret:0.04,tipo:'CDT'},
+  {n:'CDT Bco Bogotá',bruta:11.10,ret:0.04,tipo:'CDT'},{n:'CDT BBVA Colombia',bruta:11.00,ret:0.04,tipo:'CDT'},
+  {n:'TES TFIT07 nov-27',bruta:10.12,ret:0,tipo:'TES'},{n:'TES TFIT10 abr-28',bruta:10.84,ret:0,tipo:'TES'},
+  {n:'TES TFIT16 jul-32',bruta:11.20,ret:0,tipo:'TES'},{n:'TES TFIT16 abr-33',bruta:11.43,ret:0,tipo:'TES'},
+];
+let cdtC=null,cdt2C=null;
+function calcCDT(){
+  const inv=parseFloat(document.getElementById('cdtInv').value)||500;
+  const plazo=parseFloat(document.getElementById('cdtPlazo').value)||3;
+  document.getElementById('cdtBody').innerHTML=CDT_DATA.map(i=>{
+    const neta=i.bruta*(1-i.ret);
+    const rend=inv*1e6*(Math.pow(1+neta/100,plazo)-1);
+    const tot=inv*1e6+rend;
+    const badge=i.tipo==='TES'?'badge-tes':'badge-cdt';
+    return `<tr><td>${i.n}</td><td><span class="badge ${badge}">${i.tipo}</span></td><td>${i.bruta.toFixed(2)}%</td><td>${(i.ret*100).toFixed(0)}%</td><td><strong>${neta.toFixed(2)}%</strong></td><td>COP ${Math.round(rend/1e6).toFixed(1)}M</td><td>COP ${Math.round(tot/1e6).toFixed(1)}M</td></tr>`;
+  }).join('');
+  const netas=CDT_DATA.map(i=>parseFloat((i.bruta*(1-i.ret)).toFixed(2)));
+  const tots=CDT_DATA.map(i=>{const n=i.bruta*(1-i.ret);return parseFloat((inv+inv*(Math.pow(1+n/100,plazo)-1)).toFixed(2));});
+  if(cdtC)cdtC.destroy();
+  cdtC=new Chart(document.getElementById('chartCDT').getContext('2d'),{
+    type:'bar',
+    data:{labels:CDT_DATA.map(i=>i.n.replace('CDT ','').replace('TES ','').substring(0,12)),
+      datasets:[{label:'Tasa neta %',data:netas,backgroundColor:CDT_DATA.map(i=>i.tipo==='TES'?'#0d6b4f':'#b8860b'),borderRadius:4}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{
+      x:{min:9,max:12.5,ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10},callback:v=>v+'%'},grid:{color:'rgba(26,21,16,0.05)'}},
+      y:{ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10}},grid:{display:false}}
+    }}
+  });
+  if(cdt2C)cdt2C.destroy();
+  cdt2C=new Chart(document.getElementById('chartCDT2').getContext('2d'),{
+    type:'bar',
+    data:{labels:CDT_DATA.map(i=>i.n.replace('CDT ','').replace('TES ','').substring(0,12)),
+      datasets:[{label:'Capital final (COP M)',data:tots,backgroundColor:CDT_DATA.map(i=>i.tipo==='TES'?'rgba(13,107,79,0.7)':'rgba(184,134,11,0.7)'),borderRadius:4}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,indexAxis:'y',plugins:{legend:{display:false}},scales:{
+      x:{ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10},callback:v=>v+'M'},grid:{color:'rgba(26,21,16,0.05)'}},
+      y:{ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10}},grid:{display:false}}
+    }}
+  });
+}
+// CDT lazy: also re-render on input changes even if already initialized
+document.getElementById('cdtInv').addEventListener('input', calcCDT);
+document.getElementById('cdtPlazo').addEventListener('input', calcCDT);
+document.getElementById('varConf').addEventListener('change', calcVaR);
+document.getElementById('varH').addEventListener('input', calcVaR);
+document.getElementById('varVol').addEventListener('input', calcVaR);
+
+// ── DEFI CHARTS (lazy, called from show()) ─────────────────────
+let _defiInited=false;
+function initDefi(){
+  if(_defiInited)return; _defiInited=true;
+  new Chart(document.getElementById('chartDefi1').getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:['TES 1y','TES 2y','TES 5y','TES 10y','Aave USDC','Aave USDT'],
+      datasets:[
+        {label:'TES COP',data:[9.95,10.12,10.84,11.43,null,null],backgroundColor:'rgba(13,107,79,0.75)',borderRadius:4},
+        {label:'DeFi USD',data:[null,null,null,null,5.82,5.94],backgroundColor:'rgba(91,33,182,0.6)',borderRadius:4},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{
+      y:{min:0,max:14,grid:{color:'rgba(26,21,16,0.05)'},ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10},callback:v=>v+'%'}},
+      x:{grid:{display:false},ticks:{color:'#7a6e5f',font:{family:'DM Mono',size:10}}}
+    }}
+  });
+  new Chart(document.getElementById('chartDefi2').getContext('2d'),{
+    type:'doughnut',
+    data:{
+      labels:['T-Note 10y (libre riesgo)','EMBI Colombia','Ajuste FX (UIP)','Prima residual'],
+      datasets:[{data:[4.38,2.28,5.30,0.35],backgroundColor:['#0d6b4f','#b8860b','#2563eb','#c4502a'],borderColor:'#faf7f2',borderWidth:3}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{
+      legend:{position:'bottom',labels:{color:'#7a6e5f',font:{family:'DM Mono',size:10},boxWidth:12,padding:12}},
+      tooltip:{callbacks:{label:c=>`${c.label}: ${c.parsed.toFixed(2)}%`}}
+    }}
+  });
+}
+</script>
+</body>
+</html>
